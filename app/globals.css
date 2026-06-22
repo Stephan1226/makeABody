@@ -1,0 +1,45 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* SUIT 가변 폰트 — 자체 호스팅(public/fonts) → 오프라인에서도 동작 */
+@font-face {
+  font-family: "SUIT Variable";
+  src: url("/fonts/SUIT-Variable.woff2") format("woff2-variations");
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+:root {
+  color-scheme: light;
+}
+
+html,
+body {
+  background-color: theme("colors.bg");
+  color: theme("colors.text.DEFAULT");
+  font-family: theme("fontFamily.sans");
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* iOS 세이프에어리어 + 하단 탭바 높이만큼 본문 패딩 */
+body {
+  min-height: 100dvh;
+  overscroll-behavior-y: none;
+}
+
+/* 숫자(체중 등)는 자릿수 흔들림 없게 */
+.tabular {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum";
+}
+
+/* 모바일에서 입력 포커스 시 자동 확대 방지(폰트 16px 이상 유지) */
+input,
+textarea,
+button,
+select {
+  font-family: inherit;
+}

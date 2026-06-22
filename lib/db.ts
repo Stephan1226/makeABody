@@ -1,0 +1,138 @@
+import Dexie, { type Table } from "dexie";
+
+/** 하루 1건의 체중·메모 기록 */
+export interface Entry {
+  date: string; // 'YYYY-MM-DD' (primary key)
+  weight: number; // kg
+  memo: string; // 자유 메모(식단/컨디션)
+  createdAt: number;
+}
+
+/** 사용자 프로필 — 항상 1행(id=1). 첫 실행 온보딩에서 입력 */
+export interface Profile {
+  id: 1;
+  startWeight: number;
+  season1Target: number;
+  season2Target: number;
+  startDate: string; // 'YYYY-MM-DD'
+  onboardedAt: number;
+}
+
+class MakeABodyDB extends Dexie {
+  entries!: Table<Entry, string>;
+  profile!: Table<Profile, number>;
+
+  constructor() {
+    super("makeABody");
+    this.version(1).stores({
+      entries: "date, weight, createdAt",
+      profile: "id",
+    });
+  }
+}
+
+export const db = new MakeABodyDB();
+
+/* ---------- 날짜 유틸 ---------- */
+
+/** 로컬 타임존 기준 'YYYY-MM-DD' */
+export function toDateKey(d: Date = new Date()): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
+export function todayKey(): string {
+  return toDateKey(new Date());
+}
+
+/* ---------- entries 헬퍼 ---------- */
+
+export async function upsertEntry(input: {
+  date: string;
+  weight: number;
+  memo: string;
+}): Promise<void> {
+  await db.entries.put({
+    date: input.date,
+    weight: input.weight,
+    memo: input.memo,
+    createdAt: Date.now(),
+  });
+}
+
+export function getEntry(date: string): Promise<Entry | undefined> {
+  return db.entries.get(date);
+}
+
+/** 날짜 오름차순 전체 기록 */
+export function allEntries(): Promise<Entry[]> {
+  return db.entries.orderBy("date").toArray();
+}
+
+export async function deleteEntry(date: string): Promise<void> {
+  await db.entries.delete(date);
+}
+
+/* ---------- profile 헬퍼 ---------- */
+
+export function getProfile(): Promise<Profile | undefined> {
+  return db.profile.get(1);
+}
+
+export async function saveProfile(
+  input: Omit<Profile, "id" | "onboardedAt"> & Partial<Pick<Profile, "onboardedAt">>,
+): Promise<void> {
+  const existing = await db.profile.get(1);
+  await db.profile.put({
+    id: 1,
+    startWeight: input.startWeight,
+    season1Target: input.season1Target,
+    season2Target: input.season2Target,
+    startDate: input.startDate,
+    onboardedAt: input.onboardedAt ?? existing?.onboardedAt ?? Date.now(),
+  });
+}
+
+/* ---------- 백업(내보내기/가져오기) ---------- */
+
+export interface BackupData {
+  app: "makeABody";
+  version: 1;
+  exportedAt: number;
+  profile: Profile | null;
+  entries: Entry[];
+}
+
+export async function exportAll(): Promise<BackupData> {
+  const [profile, entries] = await Promise.all([getProfile(), allEntries()]);
+  return {
+    app: "makeABody",
+    version: 1,
+    exportedAt: Date.now(),
+    profile: profile ?? null,
+    entries,
+  };
+}
+
+/** JSON 백업 복원. 기존 데이터 위에 덮어쓴다(같은 날짜는 갱신). */
+export async function importAll(data: unknown): Promise<{ entries: number }> {
+  if (
+    typeof data !== "object" ||
+    data === null ||
+    (data as BackupData).app !== "makeABody"
+  ) {
+    throw new Error("makeABody 백업 파일이 아닙니다.");
+  }
+  const backup = data as BackupData;
+  await db.transaction("rw", db.entries, db.profile, async () => {
+    if (Array.isArray(backup.entries) && backup.entries.length > 0) {
+      await db.entries.bulkPut(backup.entries);
+    }
+    if (backup.profile) {
+      await db.profile.put({ ...backup.profile, id: 1 });
+    }
+  });
+  return { entries: backup.entries?.length ?? 0 };
+}
