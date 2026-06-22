@@ -2,8 +2,10 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import ChangelogModal from "@/components/ChangelogModal";
 import { exportAll, importAll, saveProfile, todayKey } from "@/lib/db";
 import { useProfile } from "@/lib/useData";
+import { APP_VERSION } from "@/lib/version";
 
 export default function SettingsPage() {
   const router = useRouter();
@@ -13,6 +15,7 @@ export default function SettingsPage() {
   const [s1, setS1] = useState("");
   const [s2, setS2] = useState("");
   const [msg, setMsg] = useState<{ kind: "ok" | "err"; text: string } | null>(null);
+  const [changelogOpen, setChangelogOpen] = useState(false);
   const hydrated = useRef(false);
 
   useEffect(() => {
@@ -132,6 +135,23 @@ export default function SettingsPage() {
         />
       </section>
 
+      {/* 업데이트 기록 */}
+      <section className="flex flex-col gap-3">
+        <h2 className="text-sm font-bold text-text-sub">업데이트 기록</h2>
+        <div className="flex items-center justify-between rounded-lg bg-surface p-4 shadow-card">
+          <div className="flex flex-col gap-0.5">
+            <span className="text-sm font-bold text-text">현재 버전</span>
+            <span className="text-xs text-text-faint">v{APP_VERSION}</span>
+          </div>
+          <button
+            onClick={() => setChangelogOpen(true)}
+            className="rounded-md border border-border bg-bg px-4 py-2 text-xs font-bold text-text-sub active:bg-border"
+          >
+            기록 보기
+          </button>
+        </div>
+      </section>
+
       {msg && (
         <p
           className={`rounded-md px-4 py-3 text-sm font-medium ${
@@ -147,6 +167,8 @@ export default function SettingsPage() {
       <p className="pt-4 text-center text-xs text-text-faint">
         시작일 {profile.startDate} · 로컬 전용 · 서버 없음
       </p>
+
+      <ChangelogModal open={changelogOpen} onClose={() => setChangelogOpen(false)} />
     </div>
   );
 }

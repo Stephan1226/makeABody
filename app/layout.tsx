@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import BottomNav from "@/components/BottomNav";
+import ChangelogGate from "@/components/ChangelogGate";
 import InstallPrompt from "@/components/InstallPrompt";
 
 export const metadata: Metadata = {
@@ -39,6 +40,7 @@ export default function RootLayout({
         <div className="mx-auto flex min-h-[100dvh] w-full max-w-[480px] flex-col">
           <main className="flex-1 px-5 pb-28 pt-[max(1rem,env(safe-area-inset-top))]">
             <InstallPrompt />
+            <ChangelogGate />
             {children}
           </main>
           <BottomNav />
