@@ -5,7 +5,6 @@ export interface Entry {
   date: string; // 'YYYY-MM-DD' (primary key)
   weight: number; // kg
   memo: string; // 자유 메모(식단/컨디션)
-  createdAt: number;
 }
 
 /** 사용자 프로필 — 항상 1행(id=1). 첫 실행 온보딩에서 입력 */
@@ -26,6 +25,10 @@ class MakeABodyDB extends Dexie {
     super("makeABody");
     this.version(1).stores({
       entries: "date, weight, createdAt",
+      profile: "id",
+    });
+    this.version(2).stores({
+      entries: "date, weight",
       profile: "id",
     });
   }
@@ -58,7 +61,6 @@ export async function upsertEntry(input: {
     date: input.date,
     weight: input.weight,
     memo: input.memo,
-    createdAt: Date.now(),
   });
 }
 
