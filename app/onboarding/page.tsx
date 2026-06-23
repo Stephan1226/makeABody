@@ -7,6 +7,7 @@ import {
   DEFAULT_SEASON1_TARGET,
   DEFAULT_SEASON2_TARGET,
   DEFAULT_START_WEIGHT,
+  validateProfileInput,
 } from "@/lib/roadmap";
 
 export default function OnboardingPage() {
@@ -25,18 +26,16 @@ export default function OnboardingPage() {
   }, [router]);
 
   async function handleSave() {
-    const startWeight = parseFloat(start);
-    const season1Target = parseFloat(s1);
-    const season2Target = parseFloat(s2);
-
-    if (![startWeight, season1Target, season2Target].every((n) => Number.isFinite(n) && n > 0)) {
-      setError("숫자를 올바르게 입력해 주세요.");
+    const result = validateProfileInput({
+      startWeight: parseFloat(start),
+      season1Target: parseFloat(s1),
+      season2Target: parseFloat(s2),
+    });
+    if (!result.ok) {
+      setError(result.error);
       return;
     }
-    if (!(startWeight > season1Target && season1Target > season2Target)) {
-      setError("시작 체중 > 시즌1 목표 > 시즌2 목표 순서여야 해요.");
-      return;
-    }
+    const { startWeight, season1Target, season2Target } = result.value;
 
     setSaving(true);
     try {

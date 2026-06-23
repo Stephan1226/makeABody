@@ -26,3 +26,28 @@ export const SEASON_INFO = {
     desc: "목표 체중을 몸이 기억하게 만든 뒤(세트포인트 변경), 맨몸 근력으로 마무리.",
   },
 } as const;
+
+export interface ProfileInput {
+  startWeight: number;
+  season1Target: number;
+  season2Target: number;
+}
+
+export type ValidationResult =
+  | { ok: true; value: ProfileInput }
+  | { ok: false; error: string };
+
+export function validateProfileInput(input: {
+  startWeight: number;
+  season1Target: number;
+  season2Target: number;
+}): ValidationResult {
+  const { startWeight, season1Target, season2Target } = input;
+  if (![startWeight, season1Target, season2Target].every((n) => Number.isFinite(n) && n > 0)) {
+    return { ok: false, error: "숫자를 올바르게 입력해 주세요." };
+  }
+  if (!(startWeight > season1Target && season1Target > season2Target)) {
+    return { ok: false, error: "시작 > 시즌1 > 시즌2 순서여야 해요." };
+  }
+  return { ok: true, value: { startWeight, season1Target, season2Target } };
+}

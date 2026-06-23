@@ -3,8 +3,10 @@
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useEntries, useProfile } from "@/lib/useData";
+import { round1 } from "@/lib/format";
 import WeightChart from "@/components/WeightChart";
 import EntryRow from "@/components/EntryRow";
+import Spinner from "@/components/Spinner";
 
 export default function HistoryPage() {
   const router = useRouter();
@@ -15,8 +17,8 @@ export default function HistoryPage() {
     if (profile === null) router.replace("/onboarding");
   }, [profile, router]);
 
-  if (profile === undefined || entries === undefined) return <Loading />;
-  if (!profile) return <Loading />;
+  if (profile === undefined || entries === undefined) return <Spinner />;
+  if (!profile) return <Spinner />;
 
   // 최신순 표시 + 직전(더 오래된) 대비 delta 계산
   const desc = [...entries].reverse();
@@ -50,18 +52,6 @@ export default function HistoryPage() {
           })}
         </ul>
       )}
-    </div>
-  );
-}
-
-function round1(n: number): number {
-  return Math.round(n * 10) / 10;
-}
-
-function Loading() {
-  return (
-    <div className="flex h-[60dvh] items-center justify-center">
-      <div className="h-6 w-6 animate-spin rounded-full border-2 border-border border-t-primary" />
     </div>
   );
 }
