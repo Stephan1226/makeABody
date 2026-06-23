@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 type Mode = "android" | "ios" | null;
 
@@ -11,6 +11,9 @@ export default function InstallPrompt() {
   const [mode, setMode] = useState<Mode>(null);
   const [deferredPrompt, setDeferredPrompt] = useState<Event & { prompt(): Promise<{ outcome: "accepted" | "dismissed" }> } | null>(null);
   const [iosOpen, setIosOpen] = useState(false);
+  const iosPanelRef = useRef<HTMLDivElement>(null);
+  const previousFocusRef = useRef<HTMLElement | null>(null);
+  const previousOverflowRef = useRef<string>("");
 
   useEffect(() => {
     // 이미 설치됐거나(standalone) 이전에 닫은 경우 표시 안 함
@@ -55,6 +58,30 @@ export default function InstallPrompt() {
     setMode(null);
     setIosOpen(false);
   }
+
+  useEffect(() => {
+    if (!iosOpen) return;
+
+    previousFocusRef.current = document.activeElement as HTMLElement | null;
+    previousOverflowRef.current = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setIosOpen(false);
+    };
+    window.addEventListener("keydown", onKey);
+
+    const raf = requestAnimationFrame(() => {
+      iosPanelRef.current?.focus();
+    });
+
+    return () => {
+      cancelAnimationFrame(raf);
+      window.removeEventListener("keydown", onKey);
+      document.body.style.overflow = previousOverflowRef.current;
+      previousFocusRef.current?.focus({ preventScroll: true });
+    };
+  }, [iosOpen]);
 
   async function install() {
     if (!deferredPrompt) return;
@@ -119,11 +146,18 @@ export default function InstallPrompt() {
           {/* 배경 딤 */}
           <div className="absolute inset-0 bg-black/40" onClick={() => setIosOpen(false)} />
 
-          <div className="relative mx-auto w-full max-w-[480px] rounded-t-2xl bg-surface px-6 pb-[max(2rem,env(safe-area-inset-bottom))] pt-5 shadow-pop">
+          <div
+            ref={iosPanelRef}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="install-instructions-title"
+            tabIndex={-1}
+            className="relative mx-auto w-full max-w-[480px] rounded-t-2xl bg-surface px-6 pb-[max(2rem,env(safe-area-inset-bottom))] pt-5 shadow-pop outline-none"
+          >
             {/* 핸들 */}
             <div className="mx-auto mb-5 h-1 w-10 rounded-full bg-border" />
 
-            <h2 className="text-lg font-extrabold">홈 화면에 추가하기</h2>
+            <h2 id="install-instructions-title" className="text-lg font-extrabold">홈 화면에 추가하기</h2>
             <p className="mt-1 text-sm text-text-faint">Safari 브라우저에서 3단계로 설치해요.</p>
 
             <ol className="mt-5 flex flex-col gap-4">
