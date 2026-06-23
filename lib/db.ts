@@ -126,8 +126,20 @@ export async function importAll(data: unknown): Promise<{ entries: number }> {
     throw new Error("makeABody 백업 파일이 아닙니다.");
   }
   const backup = data as BackupData;
+  if (backup.version !== 1) {
+    throw new Error(`지원하지 않는 백업 버전입니다. (받은 버전: ${backup.version})`);
+  }
   await db.transaction("rw", db.entries, db.profile, async () => {
     if (Array.isArray(backup.entries) && backup.entries.length > 0) {
+      const isValidEntry = (e: unknown): boolean =>
+        typeof e === "object" &&
+        e !== null &&
+        typeof (e as Entry).date === "string" &&
+        typeof (e as Entry).weight === "number" &&
+        typeof (e as Entry).memo === "string";
+      if (!backup.entries.every(isValidEntry)) {
+        throw new Error("백업 파일에 잘못된 형식의 기록이 포함되어 있습니다.");
+      }
       await db.entries.bulkPut(backup.entries);
     }
     if (backup.profile) {

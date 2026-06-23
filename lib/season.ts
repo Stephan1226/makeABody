@@ -77,10 +77,16 @@ export function computeSeasonState(
   const currentTarget = inSeason2 ? season2Target : season1Target;
   const remainingToTarget = Math.max(0, round1(latestWeight - currentTarget));
 
-  // 전체 진행률: 시작 → 최종 목표(시즌2)
-  const span = startWeight - season2Target;
   const overallProgress =
-    span > 0 ? clamp(round1(((startWeight - latestWeight) / span) * 100), 0, 100) : 0;
+    latestWeight <= season2Target
+      ? 100
+      : latestWeight >= startWeight
+        ? 0
+        : clamp(
+            round1(((startWeight - latestWeight) / Math.abs(startWeight - season2Target)) * 100),
+            0,
+            100,
+          );
 
   let maintenanceDays: number | null = null;
   let maintenanceWeeks: number | null = null;
