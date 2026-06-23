@@ -11,10 +11,16 @@ export default function ProgressBar({
   state: SeasonState;
 }) {
   const { startWeight, season1Target, season2Target } = profile;
-  const span = startWeight - season2Target;
 
   const pos = (w: number) =>
-    span > 0 ? Math.min(100, Math.max(0, ((startWeight - w) / span) * 100)) : 0;
+    w <= season2Target
+      ? 100
+      : w >= startWeight
+        ? 0
+        : Math.min(
+            100,
+            Math.max(0, ((startWeight - w) / Math.abs(startWeight - season2Target)) * 100),
+          );
 
   const s1Pos = pos(season1Target);
   const fill = state.overallProgress;
@@ -45,7 +51,7 @@ export default function ProgressBar({
         />
         {/* 시즌1 목표 지점 눈금 */}
         <div
-          className="absolute top-1/2 h-4 w-0.5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-season2"
+          className="absolute top-1/2 h-4 w-0.5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-season1"
           style={{ left: `${s1Pos}%` }}
         />
         {/* 현재 위치 점 */}
@@ -57,7 +63,7 @@ export default function ProgressBar({
 
       <div className="tabular mt-3 flex justify-between text-xs">
         <span className="font-semibold text-text-sub">{startWeight}kg</span>
-        <span className="font-semibold text-season1">시즌1 {season1Target}</span>
+        <span className="font-semibold text-season1">시즌1 {season1Target}kg</span>
         <span className="font-semibold text-season2">시즌2 {season2Target}kg</span>
       </div>
     </section>

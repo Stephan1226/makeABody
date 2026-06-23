@@ -9,7 +9,7 @@ const DISMISS_DAYS = 14;
 
 export default function InstallPrompt() {
   const [mode, setMode] = useState<Mode>(null);
-  const [deferredPrompt, setDeferredPrompt] = useState<Event & { prompt(): Promise<void> } | null>(null);
+  const [deferredPrompt, setDeferredPrompt] = useState<Event & { prompt(): Promise<{ outcome: "accepted" | "dismissed" }> } | null>(null);
   const [iosOpen, setIosOpen] = useState(false);
 
   useEffect(() => {
@@ -22,7 +22,9 @@ export default function InstallPrompt() {
     const dismissed = localStorage.getItem(DISMISSED_KEY);
     if (dismissed && Date.now() - Number(dismissed) < DISMISS_DAYS * 86_400_000) return;
 
-    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+    const isIOS =
+      /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+      (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
 
     if (isIOS) {
       // iOS Safari: beforeinstallprompt 없음 → 직접 안내
@@ -31,11 +33,20 @@ export default function InstallPrompt() {
       // Android/Chrome: beforeinstallprompt 이벤트 대기
       const handler = (e: Event) => {
         e.preventDefault();
-        setDeferredPrompt(e as Event & { prompt(): Promise<void> });
+        setDeferredPrompt(e as Event & { prompt(): Promise<{ outcome: "accepted" | "dismissed" }> });
         setMode("android");
       };
+      const installedHandler = () => {
+        localStorage.removeItem(DISMISSED_KEY);
+        setDeferredPrompt(null);
+        setMode(null);
+      };
       window.addEventListener("beforeinstallprompt", handler);
-      return () => window.removeEventListener("beforeinstallprompt", handler);
+      window.addEventListener("appinstalled", installedHandler);
+      return () => {
+        window.removeEventListener("beforeinstallprompt", handler);
+        window.removeEventListener("appinstalled", installedHandler);
+      };
     }
   }, []);
 
@@ -47,8 +58,11 @@ export default function InstallPrompt() {
 
   async function install() {
     if (!deferredPrompt) return;
-    await deferredPrompt.prompt();
-    dismiss();
+    const { outcome } = await deferredPrompt.prompt();
+    setDeferredPrompt(null);
+    if (outcome === "dismissed") {
+      dismiss();
+    }
   }
 
   if (!mode) return null;
