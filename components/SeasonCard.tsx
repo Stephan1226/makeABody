@@ -1,10 +1,18 @@
 "use client";
 
 import type { SeasonState } from "@/lib/season";
-import { MAINTENANCE_WEEKS, SEASON_INFO } from "@/lib/roadmap";
+import { MAINTENANCE_WEEKS, SEASON_INFO, goalDirection } from "@/lib/roadmap";
+import type { Profile } from "@/lib/db";
 
-export default function SeasonCard({ state }: { state: SeasonState }) {
-  const info = SEASON_INFO[state.currentSeason];
+export default function SeasonCard({
+  state,
+  profile,
+}: {
+  state: SeasonState;
+  profile: Profile;
+}) {
+  const direction = goalDirection(profile);
+  const info = SEASON_INFO[state.currentSeason][direction];
   const isS2 = state.currentSeason === 2;
 
   // 시즌별 액센트 (프라이머리 돌려쓰기 대신 상황별 색)
@@ -53,7 +61,9 @@ export default function SeasonCard({ state }: { state: SeasonState }) {
           </p>
           {state.maintenanceMet ? (
             <p className="mt-1 text-xs font-semibold text-success">
-              세트포인트 안착 — 이제 잔근육 채우기 좋아요 💪
+              {direction === "lose"
+                ? "세트포인트 안착 — 이제 잔근육 채우기 좋아요 💪"
+                : "세트포인트 안착 — 이제 점진 과부하 좋아요 💪"}
             </p>
           ) : (
             <p className="mt-1 text-xs text-text-faint">

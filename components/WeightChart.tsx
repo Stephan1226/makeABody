@@ -23,7 +23,7 @@ export default function WeightChart({
 }: {
   entries: Entry[];
   season1Target: number;
-  season2Target: number;
+  season2Target: number | null;
   startWeight: number;
   height?: number;
   recent?: number; // 최근 N개만
@@ -47,8 +47,9 @@ export default function WeightChart({
   }
 
   const weights = data.map((d) => d.weight);
-  const min = Math.min(...weights, season2Target);
-  const max = Math.max(...weights, startWeight);
+  const referencePoints = [season1Target, season2Target ?? season1Target, startWeight];
+  const min = Math.min(...weights, ...referencePoints);
+  const max = Math.max(...weights, ...referencePoints);
   const pad = 0.6;
 
   return (
@@ -87,12 +88,14 @@ export default function WeightChart({
             strokeDasharray="4 4"
             label={{ value: `시즌1 ${season1Target}`, fontSize: 10, fill: colors.season1, position: "insideTopRight" }}
           />
-          <ReferenceLine
-            y={season2Target}
-            stroke={colors.season2}
-            strokeDasharray="4 4"
-            label={{ value: `시즌2 ${season2Target}`, fontSize: 10, fill: colors.season2, position: "insideBottomRight" }}
-          />
+          {season2Target !== null && (
+            <ReferenceLine
+              y={season2Target}
+              stroke={colors.season2}
+              strokeDasharray="4 4"
+              label={{ value: `시즌2 ${season2Target}`, fontSize: 10, fill: colors.season2, position: "insideBottomRight" }}
+            />
+          )}
           <Line
             type="monotone"
             dataKey="weight"

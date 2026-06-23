@@ -50,9 +50,10 @@ Quick context for OpenCode sessions working on `makeABody` (PWA diet-roadmap tra
 
 ## Invariants to preserve
 
-- Profile weight ordering: `startWeight > season1Target > season2Target` (enforced in `app/onboarding/page.tsx` and `app/settings/page.tsx`).
+- Profile weight ordering: `startWeight` and `season1Target` must differ; same for `season2Target` when set. **감량** 모드면 `startWeight > season1Target > season2Target`, **증량** 모드면 `startWeight < season1Target < season2Target`. 방향은 `goalDirection(profile)` (`lib/roadmap.ts`) 가 자동 판정. 검증은 `validateProfileInput` (onboarding/settings 공용).
+- `season2Target` 은 `number | null`. 단일 단계 사용자도 지원.
 - Backup JSON shape (`BackupData` in `lib/db.ts`): must keep `app: "makeABody"` and `version: 1` — `importAll` rejects anything else.
-- Dexie schema version is `1` (`lib/db.ts`). Bump the version and provide a migration if you change `stores(...)`.
+- Dexie schema version is `2` (`lib/db.ts`). Bump the version and provide a migration if you change `stores(...)`.
 
 ## Conventions
 
