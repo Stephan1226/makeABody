@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { APP_VERSION, RELEASES } from "@/lib/version";
 
 export default function ChangelogModal({
@@ -10,14 +10,35 @@ export default function ChangelogModal({
   open: boolean;
   onClose: () => void;
 }) {
+  const panelRef = useRef<HTMLDivElement>(null);
+  const previousFocusRef = useRef<HTMLElement | null>(null);
+  const previousOverflowRef = useRef<string>("");
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
+
   useEffect(() => {
     if (!open) return;
+
+    previousFocusRef.current = document.activeElement as HTMLElement | null;
+    previousOverflowRef.current = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
+      if (e.key === "Escape") onCloseRef.current();
     };
     window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [open, onClose]);
+
+    const raf = requestAnimationFrame(() => {
+      panelRef.current?.focus();
+    });
+
+    return () => {
+      cancelAnimationFrame(raf);
+      window.removeEventListener("keydown", onKey);
+      document.body.style.overflow = previousOverflowRef.current;
+      previousFocusRef.current?.focus({ preventScroll: true });
+    };
+  }, [open]);
 
   if (!open) return null;
 
@@ -27,10 +48,17 @@ export default function ChangelogModal({
     <div className="fixed inset-0 z-50 flex items-end justify-center">
       <div className="absolute inset-0 bg-black/40" onClick={onClose} />
 
-      <div className="relative mx-auto flex w-full max-w-[480px] flex-col rounded-t-2xl bg-surface shadow-pop max-h-[85dvh]">
+      <div
+        ref={panelRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="changelog-title"
+        tabIndex={-1}
+        className="relative mx-auto flex w-full max-w-[480px] flex-col rounded-t-2xl bg-surface shadow-pop max-h-[85dvh] outline-none"
+      >
         <div className="px-6 pt-5">
           <div className="mx-auto mb-4 h-1 w-10 rounded-full bg-border" />
-          <h2 className="text-lg font-extrabold">업데이트 기록</h2>
+          <h2 id="changelog-title" className="text-lg font-extrabold">업데이트 기록</h2>
           <p className="mt-1 text-sm text-text-faint">
             현재 버전 v{APP_VERSION} · 최근 변경 사항을 확인해 보세요.
           </p>

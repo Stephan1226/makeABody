@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { deleteEntry, upsertEntry, type Entry } from "@/lib/db";
 import { parseDateKey } from "@/lib/date";
 import { formatDateShort } from "@/lib/format";
@@ -13,8 +13,19 @@ export default function EntryRow({
   delta: number | null; // 직전(더 오래된) 기록 대비 변화
 }) {
   const [open, setOpen] = useState(false);
+  const [confirming, setConfirming] = useState(false);
+  const confirmTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [weight, setWeight] = useState(String(entry.weight));
   const [memo, setMemo] = useState(entry.memo ?? "");
+
+  useEffect(() => {
+    return () => {
+      if (confirmTimer.current) {
+        clearTimeout(confirmTimer.current);
+        confirmTimer.current = null;
+      }
+    };
+  }, []);
 
   const dateLabel = formatDateShort(parseDateKey(entry.date));
 
@@ -26,10 +37,21 @@ export default function EntryRow({
     setOpen(false);
   }
 
-  async function remove() {
-    if (confirm(`${dateLabel} 기록을 삭제할까요?`)) {
-      await deleteEntry(entry.date);
+  function requestRemove() {
+    if (confirming) {
+      if (confirmTimer.current) {
+        clearTimeout(confirmTimer.current);
+        confirmTimer.current = null;
+      }
+      void deleteEntry(entry.date);
+      return;
     }
+    setConfirming(true);
+    if (confirmTimer.current) clearTimeout(confirmTimer.current);
+    confirmTimer.current = setTimeout(() => {
+      setConfirming(false);
+      confirmTimer.current = null;
+    }, 3000);
   }
 
   return (
@@ -57,11 +79,15 @@ export default function EntryRow({
           )}
         </button>
         <button
-          onClick={remove}
-          className="shrink-0 rounded-md px-2 py-1 text-xs font-medium text-text-faint active:bg-bg"
-          aria-label="삭제"
+          onClick={requestRemove}
+          className={`shrink-0 rounded-md px-2 py-1 text-xs font-medium ${
+            confirming
+              ? "bg-danger-soft text-danger"
+              : "text-text-faint active:bg-bg"
+          }`}
+          aria-label={confirming ? "정말 삭제" : "삭제"}
         >
-          삭제
+          {confirming ? "정말 삭제?" : "삭제"}
         </button>
       </div>
 
