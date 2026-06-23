@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import ChangelogModal from "@/components/ChangelogModal";
 import { exportAll, importAll, saveProfile, todayKey } from "@/lib/db";
 import { useProfile } from "@/lib/useData";
+import { validateProfileInput } from "@/lib/roadmap";
 import { APP_VERSION } from "@/lib/version";
 
 export default function SettingsPage() {
@@ -17,6 +18,7 @@ export default function SettingsPage() {
   const [msg, setMsg] = useState<{ kind: "ok" | "err"; text: string } | null>(null);
   const [changelogOpen, setChangelogOpen] = useState(false);
   const hydrated = useRef(false);
+  const msgTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     if (profile === null) router.replace("/onboarding");
@@ -31,26 +33,34 @@ export default function SettingsPage() {
     }
   }, [profile]);
 
+  useEffect(() => {
+    return () => {
+      if (msgTimerRef.current) clearTimeout(msgTimerRef.current);
+    };
+  }, []);
+
   function flash(kind: "ok" | "err", text: string) {
     setMsg({ kind, text });
-    setTimeout(() => setMsg(null), 2600);
+    if (msgTimerRef.current) clearTimeout(msgTimerRef.current);
+    msgTimerRef.current = setTimeout(() => setMsg(null), 2600);
   }
 
   async function saveTargets() {
     if (!profile) return;
-    const sw = parseFloat(start);
-    const t1 = parseFloat(s1);
-    const t2 = parseFloat(s2);
-    if (![sw, t1, t2].every((n) => Number.isFinite(n) && n > 0)) {
-      return flash("err", "숫자를 올바르게 입력해 주세요.");
+    const result = validateProfileInput({
+      startWeight: parseFloat(start),
+      season1Target: parseFloat(s1),
+      season2Target: parseFloat(s2),
+    });
+    if (!result.ok) {
+      flash("err", result.error);
+      return;
     }
-    if (!(sw > t1 && t1 > t2)) {
-      return flash("err", "시작 > 시즌1 > 시즌2 순서여야 해요.");
-    }
+    const { startWeight, season1Target, season2Target } = result.value;
     await saveProfile({
-      startWeight: sw,
-      season1Target: t1,
-      season2Target: t2,
+      startWeight,
+      season1Target,
+      season2Target,
       startDate: profile.startDate,
     });
     flash("ok", "목표를 저장했어요.");

@@ -1,5 +1,7 @@
 import type { Entry, Profile } from "./db";
 import { MAINTENANCE_WEEKS } from "./roadmap";
+import { daysBetween } from "./date";
+import { round1 } from "./format";
 
 export interface SeasonState {
   hasData: boolean;
@@ -20,18 +22,6 @@ export interface SeasonState {
   maintenanceWeeks: number | null;
   /** 권장 유지 기간을 채웠는지 */
   maintenanceMet: boolean;
-}
-
-/** 'YYYY-MM-DD' → 자정 기준 Date */
-function parseDate(key: string): Date {
-  const [y, m, d] = key.split("-").map(Number);
-  return new Date(y, m - 1, d);
-}
-
-function daysBetween(fromKey: string, toKey: string): number {
-  const a = parseDate(fromKey).getTime();
-  const b = parseDate(toKey).getTime();
-  return Math.max(0, Math.round((b - a) / 86_400_000));
 }
 
 const clamp = (n: number, min: number, max: number) =>
@@ -110,8 +100,4 @@ export function computeSeasonState(
     maintenanceWeeks,
     maintenanceMet,
   };
-}
-
-function round1(n: number): number {
-  return Math.round(n * 10) / 10;
 }

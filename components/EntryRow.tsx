@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import { deleteEntry, upsertEntry, type Entry } from "@/lib/db";
+import { parseDateKey } from "@/lib/date";
+import { formatDateShort } from "@/lib/format";
 
 export default function EntryRow({
   entry,
@@ -14,11 +16,7 @@ export default function EntryRow({
   const [weight, setWeight] = useState(String(entry.weight));
   const [memo, setMemo] = useState(entry.memo ?? "");
 
-  const dateLabel = new Intl.DateTimeFormat("ko-KR", {
-    month: "short",
-    day: "numeric",
-    weekday: "short",
-  }).format(parse(entry.date));
+  const dateLabel = formatDateShort(parseDateKey(entry.date));
 
   async function save() {
     const w = parseFloat(weight);
@@ -99,9 +97,4 @@ export default function EntryRow({
       )}
     </li>
   );
-}
-
-function parse(key: string): Date {
-  const [y, m, d] = key.split("-").map(Number);
-  return new Date(y, m - 1, d);
 }

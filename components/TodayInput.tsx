@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { todayKey, upsertEntry } from "@/lib/db";
 import { useTodayEntry } from "@/lib/useData";
+import { formatDateLong } from "@/lib/format";
 
 export default function TodayInput() {
   const today = useTodayEntry(); // undefined=로딩, null/undefined 없음
@@ -10,6 +11,13 @@ export default function TodayInput() {
   const [memo, setMemo] = useState("");
   const [saved, setSaved] = useState(false);
   const hydrated = useRef(false);
+  const savedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (savedTimerRef.current) clearTimeout(savedTimerRef.current);
+    };
+  }, []);
 
   // 오늘 기록이 로드되면 1회 채워넣기
   useEffect(() => {
@@ -27,14 +35,11 @@ export default function TodayInput() {
     if (!Number.isFinite(w) || w <= 0) return;
     await upsertEntry({ date: todayKey(), weight: w, memo: memo.trim() });
     setSaved(true);
-    setTimeout(() => setSaved(false), 1600);
+    if (savedTimerRef.current) clearTimeout(savedTimerRef.current);
+    savedTimerRef.current = setTimeout(() => setSaved(false), 1600);
   }
 
-  const dateLabel = new Intl.DateTimeFormat("ko-KR", {
-    month: "long",
-    day: "numeric",
-    weekday: "short",
-  }).format(new Date());
+  const dateLabel = formatDateLong(new Date());
 
   return (
     <section className="rounded-lg bg-surface p-5 shadow-card">
