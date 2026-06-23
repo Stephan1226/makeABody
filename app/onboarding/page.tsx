@@ -25,11 +25,22 @@ export default function OnboardingPage() {
     });
   }, [router]);
 
+  // 시작 vs 시즌1 의 대소로 방향을 미리 보여주기
+  const startNum = parseFloat(start);
+  const s1Num = parseFloat(s1);
+  const directionHint =
+    Number.isFinite(startNum) && Number.isFinite(s1Num) && startNum !== s1Num
+      ? s1Num < startNum
+        ? "감량 모드"
+        : "증량 모드"
+      : null;
+
   async function handleSave() {
+    const s2Trim = s2.trim();
     const result = validateProfileInput({
       startWeight: parseFloat(start),
       season1Target: parseFloat(s1),
-      season2Target: parseFloat(s2),
+      season2Target: s2Trim === "" ? null : parseFloat(s2Trim),
     });
     if (!result.ok) {
       setError(result.error);
@@ -76,17 +87,22 @@ export default function OnboardingPage() {
         />
         <WeightField
           label="시즌 1 목표"
-          hint="체중 감량"
+          hint={
+            directionHint
+              ? `1차 목표 (${directionHint})`
+              : "1차 목표 (감량/증량은 자동 판정)"
+          }
           value={s1}
           onChange={setS1}
           accent="text-season1"
         />
         <WeightField
           label="시즌 2 목표"
-          hint="최종 다듬기"
+          hint="선택 · 비워두면 시즌 1까지만"
           value={s2}
           onChange={setS2}
           accent="text-season2"
+          optional
         />
       </div>
 
@@ -113,12 +129,14 @@ function WeightField({
   value,
   onChange,
   accent,
+  optional = false,
 }: {
   label: string;
   hint: string;
   value: string;
   onChange: (v: string) => void;
   accent: string;
+  optional?: boolean;
 }) {
   return (
     <label className="flex items-center justify-between rounded-lg bg-surface px-5 py-4 shadow-card">
@@ -130,8 +148,9 @@ function WeightField({
         <input
           inputMode="decimal"
           value={value}
+          placeholder={optional ? "선택" : ""}
           onChange={(e) => onChange(e.target.value.replace(/[^0-9.]/g, ""))}
-          className="tabular w-20 bg-transparent text-right text-2xl font-extrabold text-text outline-none"
+          className="tabular w-20 bg-transparent text-right text-2xl font-extrabold text-text outline-none placeholder:text-text-faint/60"
         />
         <span className="text-sm font-semibold text-text-faint">kg</span>
       </span>

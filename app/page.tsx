@@ -41,7 +41,7 @@ export default function DashboardPage() {
       </header>
 
       <TodayInput />
-      <SeasonCard state={state} />
+      <SeasonCard state={state} profile={profile} />
       <ProgressBar profile={profile} state={state} />
       <WeightChart
         entries={entries}

@@ -12,7 +12,8 @@ export interface Profile {
   id: 1;
   startWeight: number;
   season1Target: number;
-  season2Target: number;
+  /** 시즌 2 목표. null이면 단일 단계(시즌 1 도달 후 유지)로 사용. */
+  season2Target: number | null;
   startDate: string; // 'YYYY-MM-DD'
   onboardedAt: number;
 }

@@ -11,19 +11,25 @@ export default function ProgressBar({
   state: SeasonState;
 }) {
   const { startWeight, season1Target, season2Target } = profile;
+  const endTarget = season2Target ?? season1Target;
+  const dirSign = state.direction === "lose" ? -1 : 1;
 
-  const pos = (w: number) =>
-    w <= season2Target
-      ? 100
-      : w >= startWeight
-        ? 0
-        : Math.min(
-            100,
-            Math.max(0, ((startWeight - w) / Math.abs(startWeight - season2Target)) * 100),
-          );
+  // 진행률 0~100. season2 없으면 season1이 끝점.
+  const pos = (w: number) => {
+    const distToEnd = Math.abs(startWeight - endTarget);
+    if (distToEnd === 0) return 100;
+    const reachedEnd =
+      state.direction === "lose" ? w <= endTarget : w >= endTarget;
+    if (reachedEnd) return 100;
+    if (w === startWeight) return 0;
+    const progressed = dirSign * (startWeight - w);
+    return Math.min(100, Math.max(0, (progressed / distToEnd) * 100));
+  };
 
   const s1Pos = pos(season1Target);
   const fill = state.overallProgress;
+
+  const sign = state.totalDelta > 0 ? "+" : state.totalDelta < 0 ? "−" : "";
 
   return (
     <section className="rounded-lg bg-surface p-5 shadow-card">
@@ -35,15 +41,20 @@ export default function ProgressBar({
             {state.latestWeight}
           </span>
           kg
-          {state.totalLost > 0 && (
-            <span className="tabular ml-2 font-semibold text-success">
-              −{state.totalLost}kg
+          {state.totalDelta !== 0 && (
+            <span
+              className={`tabular ml-2 font-semibold ${
+                state.totalDelta > 0 ? "text-success" : "text-text-faint"
+              }`}
+            >
+              {sign}
+              {state.totalChange}kg
             </span>
           )}
         </span>
       </div>
 
-      {/* 트랙: 시작 → [시즌1] → 시즌2 */}
+      {/* 트랙: 시작 → [시즌1] → [시즌2] */}
       <div className="relative h-3 rounded-full bg-bg">
         <div
           className="absolute inset-y-0 left-0 rounded-full bg-primary transition-all"
@@ -64,7 +75,11 @@ export default function ProgressBar({
       <div className="tabular mt-3 flex justify-between text-xs">
         <span className="font-semibold text-text-sub">{startWeight}kg</span>
         <span className="font-semibold text-season1">시즌1 {season1Target}kg</span>
-        <span className="font-semibold text-season2">시즌2 {season2Target}kg</span>
+        {season2Target !== null ? (
+          <span className="font-semibold text-season2">시즌2 {season2Target}kg</span>
+        ) : (
+          <span className="font-semibold text-text-faint">시즌2 없음</span>
+        )}
       </div>
     </section>
   );

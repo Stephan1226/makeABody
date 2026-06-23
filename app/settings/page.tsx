@@ -28,7 +28,7 @@ export default function SettingsPage() {
     if (profile && !hydrated.current) {
       setStart(String(profile.startWeight));
       setS1(String(profile.season1Target));
-      setS2(String(profile.season2Target));
+      setS2(profile.season2Target === null ? "" : String(profile.season2Target));
       hydrated.current = true;
     }
   }, [profile]);
@@ -47,10 +47,11 @@ export default function SettingsPage() {
 
   async function saveTargets() {
     if (!profile) return;
+    const s2Trim = s2.trim();
     const result = validateProfileInput({
       startWeight: parseFloat(start),
       season1Target: parseFloat(s1),
-      season2Target: parseFloat(s2),
+      season2Target: s2Trim === "" ? null : parseFloat(s2Trim),
     });
     if (!result.ok) {
       flash("err", result.error);
@@ -105,7 +106,14 @@ export default function SettingsPage() {
         <div className="flex flex-col gap-2 rounded-lg bg-surface p-2 shadow-card">
           <TargetField label="시작 체중" value={start} onChange={setStart} />
           <TargetField label="시즌 1 목표" value={s1} onChange={setS1} accent="text-season1" />
-          <TargetField label="시즌 2 목표" value={s2} onChange={setS2} accent="text-season2" />
+          <TargetField
+            label="시즌 2 목표"
+            hint="(선택)"
+            value={s2}
+            onChange={setS2}
+            accent="text-season2"
+            optional
+          />
         </div>
         <button
           onClick={saveTargets}
@@ -185,24 +193,32 @@ export default function SettingsPage() {
 
 function TargetField({
   label,
+  hint,
   value,
   onChange,
   accent = "text-text",
+  optional = false,
 }: {
   label: string;
+  hint?: string;
   value: string;
   onChange: (v: string) => void;
   accent?: string;
+  optional?: boolean;
 }) {
   return (
     <label className="flex items-center justify-between rounded-md px-3 py-2.5">
-      <span className={`text-sm font-bold ${accent}`}>{label}</span>
+      <span className="flex items-baseline gap-1">
+        <span className={`text-sm font-bold ${accent}`}>{label}</span>
+        {hint && <span className="text-[10px] font-medium text-text-faint">{hint}</span>}
+      </span>
       <span className="flex items-baseline gap-1">
         <input
           inputMode="decimal"
           value={value}
+          placeholder={optional ? "선택" : ""}
           onChange={(e) => onChange(e.target.value.replace(/[^0-9.]/g, ""))}
-          className="tabular w-16 bg-transparent text-right text-lg font-extrabold outline-none"
+          className="tabular w-16 bg-transparent text-right text-lg font-extrabold outline-none placeholder:text-text-faint/60"
         />
         <span className="text-xs font-semibold text-text-faint">kg</span>
       </span>
